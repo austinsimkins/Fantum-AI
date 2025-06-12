@@ -2,12 +2,12 @@ import os, re, time, openai
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-# ── secrets (in Render env-vars) ────────────────────────────────
+# ── secrets (set as Render env-vars) ────────────────────────────
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID   = os.getenv("ASSISTANT_ID")
 
-# optional prefix filter for files you want to attach
-TRANSCRIPT_PREFIX = "sales_transcript"        # '' → attach *all* assistant files
+# If you only want certain files, give them a prefix (else leave "")
+TRANSCRIPT_PREFIX = "sales_transcript"          # "" → attach every assistant file
 
 # ── Slack app bootstrap ─────────────────────────────────────────
 app = App(
@@ -15,22 +15,23 @@ app = App(
     signing_secret=os.getenv("SLACK_SIGNING_SECRET"),
 )
 
-# ── helper: get every assistant-purpose file id on the fly ──────
+# ── helper: get every assistant-purpose file-id on the fly ──────
 def get_transcript_file_ids() -> list[str]:
     """
-    Returns file IDs whose filename starts with TRANSCRIPT_PREFIX
-    (or all files if the prefix is empty).
+    Return IDs of files whose filename begins with TRANSCRIPT_PREFIX.
+    If the prefix is '', we return *all* assistant files.
     """
-    resp = openai.files.list(purpose="assistants")      # <-- top-level
+    resp = openai.files.list(purpose="assistants")      # top-level list call
     return [
-        f["id"]
+        f.id
         for f in resp.data
-        if (not TRANSCRIPT_PREFIX) or f["filename"].startswith(TRANSCRIPT_PREFIX)
+        if (not TRANSCRIPT_PREFIX) or f.filename.startswith(TRANSCRIPT_PREFIX)
     ]
 
 # ── Slack listener ──────────────────────────────────────────────
 @app.event("app_mention")
 def handle_mention(body, say, logger):
+    # remove the “@Fantum AI” tag
     question  = re.sub(r"<@[^>]+>", "", body["event"]["text"]).strip()
     thread_ts = body["event"].get("thread_ts") or body["event"]["ts"]
 
@@ -45,10 +46,10 @@ def handle_mention(body, say, logger):
     run = openai.beta.threads.runs.create(
         thread_id    = thread.id,
         assistant_id = ASSISTANT_ID,
-        file_ids     = get_transcript_file_ids(),   # dynamic context
+        file_ids     = get_transcript_file_ids(),   # dynamic context!
     )
 
-    # poll until completed (simple loop)
+    # simple poll loop until run finishes
     while run.status not in ("completed", "failed", "cancelled"):
         time.sleep(1.5)
         run = openai.beta.threads.runs.retrieve(
@@ -59,7 +60,8 @@ def handle_mention(body, say, logger):
     if run.status != "completed":
         logger.error(f"Assistant run failed: {run}")
         say(channel=body["event"]["channel"],
-            text="⚠️ Sorry, I couldn’t answer that.", thread_ts=thread_ts)
+            text="⚠️ Sorry, I couldn’t answer that.",
+            thread_ts=thread_ts)
         return
 
     answer = (
@@ -68,15 +70,15 @@ def handle_mention(body, say, logger):
         + "\n\nDoes that help?"
     )
 
-    # reply in Slack
+    # ── reply in Slack ──────────────────────────────────────────
     say(
         channel   = body["event"]["channel"],
         text      = answer,
         thread_ts = thread_ts,
         username  = "Fantum Specter",
-        # icon_url = "https://YOUR-LOGO.png",
+        # icon_url = "https://YOUR-LOGO.png",        # optional brand icon
     )
 
-# ── start Socket Mode ───────────────────────────────────────────
+# ── kick things off ─────────────────────────────────────────────
 if __name__ == "__main__":
     SocketModeHandler(app, os.getenv("SLACK_APP_TOKEN")).start()
