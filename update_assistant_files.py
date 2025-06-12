@@ -7,21 +7,24 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 
-# Get all assistant-purpose files
-files = openai.files.list(purpose='assistants').data
-file_ids = [f.id for f in files]
+# Your new Vector Store ID:
+VECTOR_STORE_ID = "vs_684a9ed579788191846098a478006016"
 
-# Fetch the existing assistant config
+# 1) Retrieve the existing assistant configuration
 assistant = openai.beta.assistants.retrieve(ASSISTANT_ID)
 
-# ✅ Update assistant with file search tool and attach files
-updated_assistant = openai.beta.assistants.update(
+# 2) Update it to use file_search via your vector store
+updated = openai.beta.assistants.update(
     assistant_id=ASSISTANT_ID,
     name=assistant.name,
     instructions=assistant.instructions,
     model=assistant.model,
-    tools=[{"type": "file_search"}],  # valid tool type
-    file_ids=file_ids  # 🔥 THIS is where the files go
+    tools=[{"type": "file_search"}],
+    tool_resources={
+        "file_search": {
+            "vector_store_ids": [VECTOR_STORE_ID]
+        }
+    }
 )
 
-print("✅ Assistant updated with files:", file_ids)
+print("✅ Assistant updated. File Search now uses Vector Store:", VECTOR_STORE_ID)
