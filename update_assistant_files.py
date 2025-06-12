@@ -14,16 +14,16 @@ file_ids = [f.id for f in files]
 # Fetch current assistant config
 assistant = openai.beta.assistants.retrieve(ASSISTANT_ID)
 
-# Update assistant to include all files using the new syntax
+# Update assistant with proper tool type and files
 openai.beta.assistants.update(
     assistant_id=ASSISTANT_ID,
     name=assistant.name,
     instructions=assistant.instructions,
     model=assistant.model,
-    tools=[{"type": "retrieval"}],
+    tools=[{"type": "file_search"}],  # ✅ correct value
     tool_resources={
         "file_search": {
-            "files": file_ids  # ✅ Correct key
+            "files": file_ids
         }
     }
 )
