@@ -1,83 +1,57 @@
-import os, re, time, openai
+import os, re, openai
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-# ── secrets (in Render env-vars) ───────────────────────────
+# ── load keys from env ───────────────────────────────────────────
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID   = os.getenv("ASSISTANT_ID")
 
-# Optional: only pull files whose names start with this prefix
-TRANSCRIPT_PREFIX = "sales_transcript"  # "" → attach every assistant file
-
-# ── initialize Slack app ────────────────────────────────────
+# ── init Slack app ────────────────────────────────────────────────
 app = App(
     token=os.getenv("SLACK_BOT_TOKEN"),
     signing_secret=os.getenv("SLACK_SIGNING_SECRET"),
 )
 
-# ── helper: fetch assistant-purpose file IDs ────────────────
-def get_transcript_file_ids() -> list[str]:
-    resp = openai.files.list(purpose="assistants")
-    return [
-        f.id
-        for f in resp.data
-        if (not TRANSCRIPT_PREFIX) or f.filename.startswith(TRANSCRIPT_PREFIX)
-    ]
-
-# ── Slack event handler ─────────────────────────────────────
+# ── handle @mentions ──────────────────────────────────────────────
 @app.event("app_mention")
-def handle_mention(body, say, logger):
-    question  = re.sub(r"<@[^>]+>", "", body["event"]["text"]).strip()
+def handle_mention(body, say):
+    # strip out the bot mention
+    user_q    = re.sub(r"<@[^>]+>", "", body["event"]["text"]).strip()
     thread_ts = body["event"].get("thread_ts") or body["event"]["ts"]
 
-    # 1) start a new assistant thread
+    # 1) start a new OpenAI Assistant thread
     thread = openai.beta.threads.create()
 
-    # 2) post the user message + attach transcripts here!
+    # 2) add the user’s question
     openai.beta.threads.messages.create(
-        thread_id = thread.id,
-        role      = "user",
-        content   = question,
-        file_ids  = get_transcript_file_ids(),   # ← correct placement
+        thread.id,
+        role="user",
+        content=user_q,
     )
 
-    # 3) run the assistant
+    # 3) run the assistant (no file attachments)
     run = openai.beta.threads.runs.create(
-        thread_id    = thread.id,
-        assistant_id = ASSISTANT_ID,
+        thread.id,
+        assistant_id=ASSISTANT_ID,
     )
 
-    # 4) wait for it to finish
-    while run.status not in ("completed", "failed", "cancelled"):
-        time.sleep(1.5)
-        run = openai.beta.threads.runs.retrieve(
-            thread_id = thread.id,
-            run_id    = run.id,
-        )
+    # 4) wait until it finishes
+    while run.status != "completed":
+        run = openai.beta.threads.runs.retrieve(thread.id, run.id)
 
-    if run.status != "completed":
-        logger.error(f"Assistant run failed: {run}")
-        say(
-            channel   = body["event"]["channel"],
-            text      = "⚠️ Sorry, I couldn’t answer that.",
-            thread_ts = thread_ts,
-        )
-        return
+    # 5) grab the assistant’s reply
+    reply = openai.beta.threads.messages.list(thread.id).data[0]\
+                .content[0].text.value
 
-    # 5) fetch the reply and send back to Slack
-    answer = (
-        openai.beta.threads.messages.list(thread_id=thread.id).data[0]
-        .content[0].text.value
-        + "\n\nDoes that help?"
-    )
-
+    # 6) respond in Slack thread
     say(
-        channel   = body["event"]["channel"],
-        text      = answer,
-        thread_ts = thread_ts,
-        username  = "Fantum Specter",
+        channel=body["event"]["channel"],
+        text=f"{reply}\n\nDoes that help?",
+        thread_ts=thread_ts,
+        username="Fantum Specter",
+        icon_url="https://YOUR-LOGO-URL.png"   # swap or remove
     )
 
-# ── start Socket Mode ────────────────────────────────────────
+# ── start Socket Mode listener ────────────────────────────────────
 if __name__ == "__main__":
     SocketModeHandler(app, os.getenv("SLACK_APP_TOKEN")).start()
