@@ -14,8 +14,8 @@ file_ids = [f.id for f in files]
 # Fetch current assistant
 assistant = openai.beta.assistants.retrieve(ASSISTANT_ID)
 
-# Update assistant with file search tool
-openai.beta.assistants.update(
+# Update the assistant with file_search tool and file IDs
+updated_assistant = openai.beta.assistants.update(
     assistant_id=ASSISTANT_ID,
     name=assistant.name,
     instructions=assistant.instructions,
@@ -23,7 +23,7 @@ openai.beta.assistants.update(
     tools=[{"type": "file_search"}],
     tool_resources={
         "file_search": {
-            "files": file_ids
+            "file_ids": file_ids
         }
     }
 )
