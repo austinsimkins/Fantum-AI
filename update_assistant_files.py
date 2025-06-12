@@ -11,10 +11,10 @@ ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 files = openai.files.list(purpose='assistants').data
 file_ids = [f.id for f in files]
 
-# Fetch current assistant
+# Fetch current assistant config
 assistant = openai.beta.assistants.retrieve(ASSISTANT_ID)
 
-# Recreate the assistant with updated file list
+# Update assistant to include all files using the new syntax
 openai.beta.assistants.update(
     assistant_id=ASSISTANT_ID,
     name=assistant.name,
@@ -23,7 +23,7 @@ openai.beta.assistants.update(
     tools=[{"type": "retrieval"}],
     tool_resources={
         "file_search": {
-            "file_ids": file_ids
+            "files": file_ids  # ✅ Correct key
         }
     }
 )
