@@ -14,7 +14,7 @@ file_ids = [f.id for f in files]
 # Fetch current assistant
 assistant = openai.beta.assistants.retrieve(ASSISTANT_ID)
 
-# Update the assistant with file_search tool and file IDs
+# Update the assistant with file_search tool and correct file_ids structure
 updated_assistant = openai.beta.assistants.update(
     assistant_id=ASSISTANT_ID,
     name=assistant.name,
