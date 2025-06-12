@@ -28,4 +28,4 @@ openai.beta.assistants.update(
     }
 )
 
-print("✅ Assistant upda
+print("✅ Assistant updated with files:", file_ids)
