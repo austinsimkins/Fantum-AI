@@ -46,8 +46,10 @@ def handle_mention(body, say):
     reply = openai.beta.threads.messages.list(thread.id).data[0]\
                 .content[0].text.value
 
-    # 5.5) clean up citation references (optional but recommended)
-    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)
+    # 5.5) clean up citation references and markdown formatting
+    reply = re.sub(r"\[\d+†[^\]]+\]", "", reply)              # remove [4:17†source]
+    reply = re.sub(r"^###?\s*", "* ", reply, flags=re.MULTILINE)  # convert markdown headings to bullets
+    reply = re.sub(r"\*\*(.*?)\*\*", r"_\1_", reply)               # convert bold markdown **...** to _italics_ for Slack
 
     # 6) respond in Slack thread
     app.client.chat_postMessage(
@@ -55,7 +57,8 @@ def handle_mention(body, say):
         text=f"{reply}\n\nDoes that help?",
         thread_ts=thread_ts,
         username="Fantum AI",
-        icon_url="https://YOUR-LOGO-URL.png"
+        icon_url="https://YOUR-LOGO-URL.png",
+        mrkdwn=True
     )
 
 # ── start the Socket Mode listener ───────────────────────────────
