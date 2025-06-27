@@ -47,8 +47,8 @@ def handle_mention(body, say):
                 .content[0].text.value
 
     # 5.5) clean up citation references (safe and specific)
-    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)
-    reply = re.sub(r"\n{3,}", "\n\n", reply)  # normalize extra line breaks
+    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)      # remove [4:5†source]
+    reply = re.sub(r"\n{3,}", "\n\n", reply)              # normalize extra line breaks
 
     # 6) respond in Slack thread
     app.client.chat_postMessage(
