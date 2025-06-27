@@ -46,10 +46,12 @@ def handle_mention(body, say):
     reply = openai.beta.threads.messages.list(thread.id).data[0]\
                 .content[0].text.value
 
-    # 5.5) clean up citation references and markdown formatting
+    # 5.5) clean up all markdown and citation references
     reply = re.sub(r"\[\d+†[^\]]+\]", "", reply)              # remove [4:17†source]
-    reply = re.sub(r"^###?\s*", "* ", reply, flags=re.MULTILINE)  # convert markdown headings to bullets
-    reply = re.sub(r"\*\*(.*?)\*\*", r"_\1_", reply)               # convert bold markdown **...** to _italics_ for Slack
+    reply = re.sub(r"\*\*(.*?)\*\*", r"\1", reply)            # remove bold markdown
+    reply = re.sub(r"_(.*?)_", r"\1", reply)                  # remove italics markdown
+    reply = re.sub(r"^###?\s*", "", reply, flags=re.MULTILINE)  # remove headings
+    reply = re.sub(r"\n{3,}", "\n\n", reply)                  # normalize spacing
 
     # 6) respond in Slack thread
     app.client.chat_postMessage(
@@ -58,7 +60,7 @@ def handle_mention(body, say):
         thread_ts=thread_ts,
         username="Fantum AI",
         icon_url="https://YOUR-LOGO-URL.png",
-        mrkdwn=True
+        mrkdwn=False
     )
 
 # ── start the Socket Mode listener ───────────────────────────────
