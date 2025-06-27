@@ -53,6 +53,7 @@ def handle_mention(body, say):
         thread_ts=thread_ts,
         username="Fantum Specter",
         icon_url="https://YOUR-LOGO-URL.png"  # swap or remove as desired
+        mrkdwn=False  # disables Slack markdown
     )
 
 # ── start the Socket Mode listener ───────────────────────────────
