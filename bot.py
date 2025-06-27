@@ -50,7 +50,7 @@ def handle_mention(body, say):
     app.client.chat_postMessage(
         channel=body["event"]["channel"],
         text=f"{reply}\n\nDoes that help?",
-        thread_ts=thread_ts
+        thread_ts=thread_ts,
         mrkdwn=False  # disables Slack markdown
     )
 
