@@ -46,6 +46,9 @@ def handle_mention(body, say):
     reply = openai.beta.threads.messages.list(thread.id).data[0]\
                 .content[0].text.value
 
+    # 5.5) clean up citation references (optional but recommended)
+    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)
+
     # 6) respond in Slack thread
     app.client.chat_postMessage(
         channel=body["event"]["channel"],
