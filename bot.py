@@ -47,7 +47,7 @@ def handle_mention(body, say):
                 .content[0].text.value
 
     # 6) respond in Slack thread
-   app.client.chat_postMessage(
+    app.client.chat_postMessage(
         channel=body["event"]["channel"],
         text=f"{reply}\n\nDoes that help?",
         thread_ts=thread_ts
