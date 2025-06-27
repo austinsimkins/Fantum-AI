@@ -51,7 +51,8 @@ def handle_mention(body, say):
         channel=body["event"]["channel"],
         text=f"{reply}\n\nDoes that help?",
         thread_ts=thread_ts,
-        mrkdwn=False  # disables Slack markdown
+        username="Fantum AI",
+        icon_url="https://YOUR-LOGO-URL.png"
     )
 
 # ── start the Socket Mode listener ───────────────────────────────
