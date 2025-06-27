@@ -46,17 +46,14 @@ def handle_mention(body, say):
     reply = openai.beta.threads.messages.list(thread.id).data[0]\
                 .content[0].text.value
 
-    # 5.5) clean up all markdown and citation references
-    reply = re.sub(r"\[\d+†[^\]]+\]", "", reply)              # remove [4:17†source]
-    reply = re.sub(r"\*\*(.*?)\*\*", r"\1", reply)            # remove bold markdown
-    reply = re.sub(r"_(.*?)_", r"\1", reply)                  # remove italics markdown
-    reply = re.sub(r"^###?\s*", "", reply, flags=re.MULTILINE)  # remove headings
-    reply = re.sub(r"\n{3,}", "\n\n", reply)                  # normalize spacing
+    # 5.5) clean up citation references (safe and specific)
+    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)
+    reply = re.sub(r"\n{3,}", "\n\n", reply)  # normalize extra line breaks
 
     # 6) respond in Slack thread
     app.client.chat_postMessage(
         channel=body["event"]["channel"],
-        text=f"{reply}\n\nDoes that help?",
+        text=reply,
         thread_ts=thread_ts,
         username="Fantum AI",
         icon_url="https://YOUR-LOGO-URL.png",
