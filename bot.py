@@ -46,9 +46,10 @@ def handle_mention(body, say):
     reply = openai.beta.threads.messages.list(thread.id).data[0]\
                 .content[0].text.value
 
-    # 5.5) clean up citation references (safe and specific)
-    reply = re.sub(r"\[\d+:\d+†[^\]]+\]", "", reply)      # remove [4:5†source]
-    reply = re.sub(r"\n{3,}", "\n\n", reply)              # normalize extra line breaks
+    # 5.5 clean up markdown and citations
+    reply = re.sub(r"\[\d+[:†][^\]]+\]", "", reply)        # remove [4:6†file]
+    reply = re.sub(r"\*\*(.*?)\*\*", r"\1", reply)         # remove **bold** markdown
+    reply = re.sub(r"\n{3,}", "\n\n", reply)               # normalize spacing
 
     # 6) respond in Slack thread
     app.client.chat_postMessage(
