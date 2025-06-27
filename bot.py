@@ -47,12 +47,10 @@ def handle_mention(body, say):
                 .content[0].text.value
 
     # 6) respond in Slack thread
-    say(
+   app.client.chat_postMessage(
         channel=body["event"]["channel"],
         text=f"{reply}\n\nDoes that help?",
-        thread_ts=thread_ts,
-        username="Fantum Specter",
-        icon_url="https://YOUR-LOGO-URL.png"  # swap or remove as desired
+        thread_ts=thread_ts
         mrkdwn=False  # disables Slack markdown
     )
 
