@@ -47,10 +47,11 @@ def handle_mention(body, say):
                 .content[0].text.value
 
     # 5.5 clean up citation references and markdown
-    reply = re.sub(r"\[\d+[:†][^\]]*\]", "", reply)             # remove [4:1†file–abc123]
-    reply = re.sub(r"\*\*(.*?)\*\*", r"\1", reply)              # remove bold markdown
-    reply = re.sub(r"\n{3,}", "\n\n", reply)                    # normalize spacing
-    reply = re.sub(r"^#{1,6}\s*", "", reply, flags=re.MULTILINE)  # remove markdown headers like ###
+    reply = re.sub(r"[【\[]\d+[:†][^\]】]+[】\]]", "", reply)  # removes citations like [4:1†source] and  
+    reply = re.sub(r"\*\*(.*?)\*\*", r"\1", reply)          # removes bold markdown
+    reply = re.sub(r"\n{3,}", "\n\n", reply)                # normalizes spacing
+    reply = re.sub(r"^#{1,6}\s*", "", reply, flags=re.MULTILINE)  # removes markdown headers like ###
+    reply = reply.strip()
     
     # 6) respond in Slack thread
     app.client.chat_postMessage(
